@@ -1,4 +1,7 @@
+import fs from "fs";
+import path from "path";
 import chalk from "chalk";
+import { formatDate } from "./utils.js";
 
 /**
  * Asynchronously retrieves the assistant ID from OpenAI's assistant list.
@@ -13,31 +16,31 @@ import chalk from "chalk";
  */
 export async function getAssistantId(openAiInstance, assistantName) {
   if (!assistantName) {
-    throw new Error("Assistant name is not provided.");
+    throw new Error("Не вказано ім'я ассистента (перевірте файл '.env').");
   }
   if (!openAiInstance) {
-    throw new Error("OpenAI instance is not provided.");
+    throw new Error("Не вказано екземпляр OpenAI.");
   }
 
-  const assistants = await openAiInstance.assistants.list();
+  const assistants = await openAiInstance.beta.assistants.list();
 
   const targetAssistants =
     assistants?.data?.filter((assistant) => assistant.name === assistantName) ||
     [];
 
-  // If no assistants are found, create a new assistant
+  // якщо асистентів немає, створити нового асистента
   if (!assistants?.data?.length || !targetAssistants.length) {
     console.log(
       chalk.yellow(
-        `Assistant "${chalk.green.bold(
+        `Асистент ${chalk.green.bold(
           assistantName
-        )}" not found. Creating a new assistant...`
+        )} не знайден. Створення нового асистента...`
       )
     );
     return _createNewAssistant(openAiInstance, assistantName);
   }
 
-  // If more than one assistant is found with the same name, select the one with the latest creation date
+  // якщо знайдено більше одного асистента з ім'ям assistantName - вибрати асистента з  останньою датою
   if (targetAssistants.length > 1) {
     targetAssistants.sort(
       (a, b) => new Date(b.created_at) - new Date(a.created_at)
@@ -48,21 +51,21 @@ export async function getAssistantId(openAiInstance, assistantName) {
     console.log(
       chalk.yellow(
         `
-⚠️  Multiple assistants found with the name: ${chalk.green.bold(assistantName)}.
-Selected the assistant with the latest creation date: ${chalk.blue.bold(
-          formattedDate
-        )}.
-Assistant ID: ${chalk.grey.bold(latestAssistant.id)}
-`
+  ⚠️  Знайдено більше одного асистента з ім'ям: ${chalk.green.bold(
+    assistantName
+  )}.
+  Вибрано фаасистентайл з останньою датою: ${chalk.blue.bold(formattedDate)}.
+  ID асистента: ${chalk.grey.bold(latestAssistant.id)}
+  `
       )
     );
 
     return latestAssistant.id;
   }
 
-  // If one assistant is found, return its ID
+  // якщо знайдено одного асистента - повернути його id
   console.log(
-    `✔️ Assistant ${chalk.green.bold(assistantName)} found:`,
+    `✔️ Асистент ${chalk.green.bold(assistantName)} знайдено:`,
     targetAssistants[0].id
   );
   return targetAssistants[0].id;
@@ -77,28 +80,51 @@ Assistant ID: ${chalk.grey.bold(latestAssistant.id)}
  * @returns {Promise<string>} The ID of the newly created assistant.
  */
 async function _createNewAssistant(openAiInstance, assistantName) {
-  const assistant = await openAiInstance.assistants.create({
+  const assistant = await openAiInstance.beta.assistants.create({
     name: assistantName,
-    purpose: "assistants",
+    instructions: _getAssistantInstructions(),
+    model: process.env.OPENAI_MODEL,
+    tools: [{ type: "file_search" }],
+    temperature: parseFloat(process.env.OPENAI_TEMPERATURE),
   });
 
   console.log(
     chalk.green(
-      `✔️ Assistant ${chalk.green.bold.underline(assistantName)} created.`
+      `✔️ Асистент ${chalk.green.bold.underline(assistantName)} створений.`
     )
   );
   return assistant.id;
 }
 
 /**
- * Format date to string like "31 Jan 2024, 15:30"
- * @param {number} timeStampInSec - timestamp in seconds (python format, OpenAI API format)
- * @returns {string} formatted date
- * @example formatDate(1739641153) // "31 Jan 2024, 15:30"
+ * Retrieves the assistant instructions from a specified file.
+ *
+ * This function constructs the file path using the environment variable `FOLDER_NAME`
+ * and the file name `assistant_instructions.md`. It checks if the file exists, and if not,
+ * throws an error indicating that the file was not found. If the file exists, it reads the
+ * content of the file and logs it to the console.
+ *
+ * @throws {Error} Throws an error if the file does not exist.
+ * @returns {string} The content of the assistant instructions file.
  */
-function formatDate(timeStampInSec) {
-  const correctedDate = new Date(timeStampInSec * 1000);
-  return `${correctedDate.getDate()} ${correctedDate.toLocaleString("default", {
-    month: "short",
-  })} ${correctedDate.getFullYear()}, ${correctedDate.getHours()}:${correctedDate.getMinutes()}`;
+function _getAssistantInstructions() {
+  const ASSISTANT_INSTRUCTIONS_FILE_NAME = "assistant_instructions.md";
+
+  const filePath = path.resolve(
+    `${process.env.FOLDER_NAME}/${ASSISTANT_INSTRUCTIONS_FILE_NAME}`
+  );
+  // Перевіряємо чи файл існує
+  if (!fs.existsSync(filePath)) {
+    throw new Error(
+      chalk.red(
+        `❌ Файл ${chalk.red.bold.underline(
+          ASSISTANT_INSTRUCTIONS_FILE_NAME
+        )} не знайдено. Додайте файл у папку ${chalk.blue.bold.underline(
+          process.env.FOLDER_NAME
+        )}.`
+      )
+    );
+  }
+  const assistantInstructions = fs.readFileSync(filePath, "utf8");
+  return assistantInstructions;
 }

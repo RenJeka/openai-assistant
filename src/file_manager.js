@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import chalk from "chalk";
+import { formatDate } from "./utils.js";
 
 /**
  * Asynchronously retrieves the file ID from OpenAI's file list.
@@ -75,7 +76,7 @@ Id файлу: ${chalk.grey.bold(latestFile.id)}
  */
 async function _createNewFile(openAiInstance, fileName) {
   // Отримуємо повний шлях до файлу
-  const filePath = path.resolve(`../${process.env.FOLDER_NAME}/${fileName}`);
+  const filePath = path.resolve(`${process.env.FOLDER_NAME}/${fileName}`);
 
   // Перевіряємо чи файл існує
   if (!fs.existsSync(filePath)) {
@@ -100,17 +101,4 @@ async function _createNewFile(openAiInstance, fileName) {
     chalk.green(`✔️ Файл ${chalk.green.bold.underline(fileName)} створено.`)
   );
   return file.id;
-}
-
-/**
- * format date to string like "31 Jan 2024, 15:30"
- * @param {number} timeStampInSec - timestamp in seconds (python format, OpenAI API format)
- * @returns {string} formatted date
- * @example formatDate(1739641153) // "31 Jan 2024, 15:30"
- * */
-function formatDate(timeStampInSec) {
-  const correctedDate = new Date(timeStampInSec * 1000);
-  return `${correctedDate.getDate()} ${correctedDate.toLocaleString("default", {
-    month: "short",
-  })} ${correctedDate.getFullYear()}, ${correctedDate.getHours()}:${correctedDate.getMinutes()}`;
 }

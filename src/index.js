@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import chalk from "chalk";
 import { config as dotEnvConfig } from "dotenv";
 import { getFileId } from "./file_manager.js";
+import { getAssistantId } from "./assistant_manager.js";
 
 dotEnvConfig({ path: ".env" });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -11,6 +12,11 @@ async function main() {
     const fileId = await getFileId(openai, process.env.FILE_NAME);
 
     console.log(`✔️ Id файлу: ${chalk.grey.bold(fileId)}`);
+
+    const assistantId = await getAssistantId(
+      openai,
+      process.env.ASSISTANT_NAME
+    );
 
     // // // 2. Створення асистента
     // const assistant = await openai.beta.assistants.create({

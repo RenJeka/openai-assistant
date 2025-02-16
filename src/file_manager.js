@@ -16,10 +16,10 @@ import { formatDate } from "./utils.js";
  */
 export async function getFileId(openAiInstance, fileName) {
   if (!fileName) {
-    throw new Error("Не вказано ім'я файлу.");
+    throw new Error("❌ Не вказано ім'я файлу.");
   }
   if (!openAiInstance) {
-    throw new Error("Не вказано екземпляр OpenAI.");
+    throw new Error("❌ Не вказано екземпляр OpenAI.");
   }
 
   const files = await openAiInstance.files.list();

@@ -16,10 +16,10 @@ import { formatDate } from "./utils.js";
  */
 export async function getAssistantId(openAiInstance, assistantName) {
   if (!assistantName) {
-    throw new Error("Не вказано ім'я ассистента (перевірте файл '.env').");
+    throw new Error("❌ Не вказано ім'я ассистента (перевірте файл '.env').");
   }
   if (!openAiInstance) {
-    throw new Error("Не вказано екземпляр OpenAI.");
+    throw new Error("❌ Не вказано екземпляр OpenAI.");
   }
 
   const assistants = await openAiInstance.beta.assistants.list();
@@ -65,8 +65,9 @@ export async function getAssistantId(openAiInstance, assistantName) {
 
   // якщо знайдено одного асистента - повернути його id
   console.log(
-    `✔️ Асистент ${chalk.green.bold(assistantName)} знайдено:`,
-    targetAssistants[0].id
+    `✔️ Асистент ${chalk.green.bold(assistantName)} знайдено: ${chalk.grey.bold(
+      targetAssistants[0].id
+    )}`
   );
   return targetAssistants[0].id;
 }

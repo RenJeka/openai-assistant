@@ -53,18 +53,30 @@ export async function getRunStatus(openAiInstance, threadId, runId) {
     throw new Error("❌ Не вказано ID запуску.");
   }
 
-  const runStatus = await openAiInstance.beta.threads.runs.retrieve(
+  const runObject = await openAiInstance.beta.threads.runs.retrieve(
     threadId,
     runId
   );
-  switch (runStatus.status) {
+  switch (runObject.status) {
     case "failed":
-      throw new Error(chalk.red(`Помилка: ${runStatus.error}`));
+      throw new Error(chalk.red(`Помилка: ${runObject.error}`));
     case "in_progress":
-      console.error(chalk.cyan("Завантаження..."));
+      console.error(chalk.gray.italic("⌛ Завантаження..."));
+      break;
+    case "completed":
+      console.log(chalk.green("✔️ Завершено"));
+      console.log(
+        chalk.grey(
+          `${chalk.bold.underline("Використано токенів:")}
+Вхідних (input): ${chalk.bold(runObject.usage.prompt_tokens)}
+Вихідних (output): ${chalk.bold(runObject.usage.completion_tokens)}
+Всього: ${chalk.bold(runObject.usage.total_tokens)}
+`
+        )
+      );
       break;
     default:
-      console.log("Статус:", runStatus.status);
+      console.log("Статус:", runObject.status);
   }
-  return runStatus;
+  return runObject;
 }

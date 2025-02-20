@@ -61,7 +61,7 @@ Id файлу: ${chalk.grey.bold(latestFile.id)}
   // якщо знайдено один файл - повернути його id
   console.log(
     `✔️ Файл ${chalk.green.bold(fileName)} знайдено:`,
-    targetFiles.id
+    targetFiles[0].id
   );
   return targetFiles[0].id;
 }

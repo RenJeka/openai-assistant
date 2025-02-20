@@ -36,7 +36,8 @@ async function main() {
     console.log(`✔️ Id треду: ${chalk.grey.bold(threadId)}`);
 
     // TODO: create a message dynamically via console input
-    const message = "Які пари по розкладу на вівторок: ?";
+    // const message = "Які прдмети у середу у групи С?";
+    const message = await askUserMessage();
 
     // 4. Додавання повідомлення в тред
     await addMessageToThread(openai, threadId, message, fileId);
@@ -56,10 +57,26 @@ async function main() {
 
     // 7. Отримання відповіді
     const lastMessage = await getLastResponse(openai, threadId);
-    console.log(`✔️ Відповідь асистента: ${chalk.cyan.bold(lastMessage)}`);
+    console.log(`
+💬 Відповідь асистента: 
+${chalk.cyan.bold(lastMessage)}
+      `);
   } catch (error) {
     console.error(chalk.red("Помилка: "), error);
   }
+  return;
+}
+
+async function askUserMessage() {
+  return new Promise((resolve, reject) => {
+    process.stdout.write(
+      chalk.green.bold("\n Введіть повідомлення для асистента: ")
+    );
+    process.stdin.setEncoding("utf-8");
+    process.stdin.on("data", (data) => {
+      resolve(data.trim());
+    });
+  });
 }
 
 main();

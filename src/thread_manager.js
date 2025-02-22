@@ -43,6 +43,7 @@ async function _createNewThread(openAiInstance) {
  * @param {OpenAI} openAiInstance - The OpenAI instance to use for thread operations.
  * @param {string} threadId - The ID of the thread to add the message to.
  * @param {Object} message - The message object to add to the thread.
+ * @param {string} fileId - The ID of the file to attach to the
  * @returns {Promise<void>}
  * @throws Will throw an error if adding the message fails.
  */

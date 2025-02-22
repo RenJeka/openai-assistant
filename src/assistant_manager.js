@@ -72,6 +72,26 @@ export async function getAssistantId(openAiInstance, assistantName) {
   return targetAssistants[0].id;
 }
 
+export async function updateAssistantWithVectorStore(
+  openAiInstance,
+  assistantId,
+  vectorStoreId
+) {
+  if (!openAiInstance) {
+    throw new Error("❌ Не вказано екземпляр OpenAI.");
+  }
+  if (!assistantId) {
+    throw new Error("❌ Не вказано ID асистента.");
+  }
+  if (!vectorStoreId) {
+    throw new Error("❌ Не вказано ID векторного сховища.");
+  }
+
+  await openAiInstance.beta.assistants.update(assistantId, {
+    tool_resources: { file_search: { vector_store_ids: [vectorStoreId] } },
+  });
+}
+
 /**
  * Asynchronously creates a new assistant in OpenAI.
  * @async
@@ -81,20 +101,31 @@ export async function getAssistantId(openAiInstance, assistantName) {
  * @returns {Promise<string>} The ID of the newly created assistant.
  */
 async function _createNewAssistant(openAiInstance, assistantName) {
-  const assistant = await openAiInstance.beta.assistants.create({
-    name: assistantName,
-    instructions: _getAssistantInstructions(),
-    model: process.env.OPENAI_MODEL,
-    tools: [{ type: "file_search" }],
-    temperature: parseFloat(process.env.OPENAI_TEMPERATURE),
-  });
+  try {
+    const assistant = await openAiInstance.beta.assistants.create({
+      name: assistantName,
+      instructions: _getAssistantInstructions(),
+      model: process.env.OPENAI_MODEL,
+      tools: [{ type: "file_search" }],
+      temperature: parseFloat(process.env.OPENAI_TEMPERATURE),
+    });
 
-  console.log(
-    chalk.green(
-      `✔️ Асистент ${chalk.green.bold.underline(assistantName)} створений.`
-    )
-  );
-  return assistant.id;
+    if (!assistant.id) {
+      throw new Error(
+        chalk.red("❌ Не вдалося створити асистента. Спробуйте ще раз.")
+      );
+    }
+
+    console.log(
+      chalk.green(
+        `✔️ Асистент ${chalk.green.bold.underline(assistantName)} створений.`
+      )
+    );
+
+    return assistant.id;
+  } catch (error) {
+    throw new Error(chalk.red("❌ Помилка: ") + error.message);
+  }
 }
 
 /**

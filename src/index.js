@@ -1,8 +1,11 @@
 import OpenAI from "openai";
 import chalk from "chalk";
 import { config as dotEnvConfig } from "dotenv";
-import { getFileId } from "./file_manager.js";
-import { getAssistantId } from "./assistant_manager.js";
+import { getFileId, getVectorStoreId } from "./file_manager.js";
+import {
+  getAssistantId,
+  updateAssistantWithVectorStore,
+} from "./assistant_manager.js";
 import {
   getThreadId,
   addMessageToThread,
@@ -30,43 +33,60 @@ async function main() {
 
     console.log(`✔️ Id асистента: ${chalk.grey.bold(assistantId)}`);
 
-    // 3. Отримання ID треду
+    // 3. Завантажуємо файли у асистента. (Отримуємо векторне сховище)
+    const vectorStoreId = await getVectorStoreId(openai, [fileId]);
+
+    console.log(`✔️ Id векторного сховища: ${chalk.grey.bold(vectorStoreId)}`);
+
+    await updateAssistantWithVectorStore(openai, assistantId, vectorStoreId);
+
+    // 4. Отримання ID треду
     const threadId = await getThreadId(openai);
 
     console.log(`✔️ Id треду: ${chalk.grey.bold(threadId)}`);
 
-    // TODO: create a message dynamically via console input
-    // const message = "Які прдмети у середу у групи С?";
-    const message = await askUserMessage();
-
-    // 4. Додавання повідомлення в тред
-    await addMessageToThread(openai, threadId, message, fileId);
-
-    // 5. Запуск асистента
-    const runObject = await runAssistantOnThread(openai, threadId, assistantId);
-
-    // 6. Очікування відповіді
+    // Логіка надсилання повідомлень і отримування відповідей
     while (true) {
-      // перевіряємо статус запуску кожні 2 секунди
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      runStatus = await getRunStatus(openai, threadId, runObject.id);
-      if (runStatus.status === "completed" || runStatus.status === "failed") {
-        break;
-      }
-    }
+      const message = await askUserMessage();
 
-    // 7. Отримання відповіді
-    const lastMessage = await getLastResponse(openai, threadId);
-    console.log(`
-💬 Відповідь асистента: 
-${chalk.cyan.bold(lastMessage)}
+      // 5. Додавання повідомлення в тред
+      await addMessageToThread(openai, threadId, message);
+
+      //// Якщо ви хочете додати файл до повідомлення, використовуйте цей код
+      // await addMessageToThread(openai, threadId, message, fileId);
+
+      // 6. Запуск асистента
+      const runObject = await runAssistantOnThread(
+        openai,
+        threadId,
+        assistantId
+      );
+
+      // 7. Очікування відповіді
+      while (true) {
+        // перевіряємо статус запуску кожні 2 секунди
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        runStatus = await getRunStatus(openai, threadId, runObject.id);
+        if (runStatus.status === "completed" || runStatus.status === "failed") {
+          break;
+        }
+      }
+
+      // 8. Отримання відповіді
+      const lastMessage = await getLastResponse(openai, threadId);
+      console.log(`\n💬 Відповідь асистента: \n ${chalk.cyan.bold(lastMessage)}
       `);
+    }
   } catch (error) {
     console.error(chalk.red("Помилка: "), error);
   }
   return;
 }
 
+/**
+ * @example "Які предмети у середу для групи ...?";
+ * @returns {Promise<string>} The user message.
+ */
 async function askUserMessage() {
   return new Promise((resolve, reject) => {
     process.stdout.write(

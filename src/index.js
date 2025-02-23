@@ -16,26 +16,26 @@ import TelegramBot from "node-telegram-bot-api";
 
 dotEnvConfig({ path: ".env" });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const TB_TOKEN = process.env.TELEGRAM_BOT_KEY;
-const bot = new TelegramBot(TB_TOKEN, {
+
+const bot = new TelegramBot(process.env.TELEGRAM_BOT_KEY, {
   polling: {
     interval: 300,
     autoStart: true,
   },
 });
 
-bot.on("message", async (msg, metadata) => {
+bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
   const message = msg.text;
-
   if (message === "/start") {
-    bot.sendMessage(chatId, "Будь-ласка, введіть ваш запит до асистента: ↓↓↓");
+    bot.sendMessage(chatId, "Привіт! Будь-ласка, введіть запит до асистента:");
   } else {
+    bot.sendMessage(chatId, "Ваш запит обробляється ...");
     main(chatId, message);
   }
 });
 
-async function main(tgChatId, message) {
+async function main(telegramBotChatID, telegramBotMessage) {
   let runStatus;
 
   try {
@@ -66,8 +66,7 @@ async function main(tgChatId, message) {
 
     // Логіка надсилання повідомлень і отримування відповідей
     // while (true) {
-    // const message = await askUserMessage();
-    // const message = "що у нас на середу?";
+    const message = telegramBotMessage;
 
     // 5. Додавання повідомлення в тред
     await addMessageToThread(openai, threadId, message);
@@ -91,8 +90,9 @@ async function main(tgChatId, message) {
     // 8. Отримання відповіді
     const lastMessage = await getLastResponse(openai, threadId);
     console.log(`\n💬 Відповідь асистента: \n ${chalk.cyan.bold(lastMessage)}
-    `);
-    bot.sendMessage(tgChatId, `\n💬 Відповідь асистента: ${lastMessage}`);
+      `);
+
+    bot.sendMessage(telegramBotChatID, lastMessage);
     // }
   } catch (error) {
     console.error(chalk.red("Помилка: "), error);

@@ -12,7 +12,8 @@
   "license": "ISC",
   "dependencies": {
     "chalk": "5.4.1",
-    "openai": "^4.82.0"
+    "openai": "^4.82.0",
+    "node-telegram-bot-api": "0.64.0"
   },
   "devDependencies": {
     "dotenv": "^16.4.7"

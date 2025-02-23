@@ -59,7 +59,9 @@ export async function getRunStatus(openAiInstance, threadId, runId) {
   );
   switch (runObject.status) {
     case "failed":
-      throw new Error(chalk.red(`Помилка: ${runObject.error}`));
+      throw new Error(
+        chalk.red(`Помилка: ${runObject?.last_error?.message || "Не відомо"}`)
+      );
     case "in_progress":
       console.error(chalk.gray.italic("⌛ Завантаження..."));
       break;
@@ -68,9 +70,9 @@ export async function getRunStatus(openAiInstance, threadId, runId) {
       console.log(
         chalk.grey(
           `${chalk.bold.underline("Використано токенів:")}
-Вхідних (input): ${chalk.bold(runObject.usage.prompt_tokens)}
-Вихідних (output): ${chalk.bold(runObject.usage.completion_tokens)}
-Всього: ${chalk.bold(runObject.usage.total_tokens)}
+Вхідних (input): ${chalk.bold(runObject?.usage?.prompt_tokens)}
+Вихідних (output): ${chalk.bold(runObject?.usage?.completion_tokens)}
+Всього: ${chalk.bold(runObject?.usage?.total_tokens)}
 `
         )
       );

@@ -12,11 +12,30 @@ import {
   getLastResponse,
 } from "./thread_manager.js";
 import { runAssistantOnThread, getRunStatus } from "./run_manager.js";
+import TelegramBot from "node-telegram-bot-api";
 
 dotEnvConfig({ path: ".env" });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const TB_TOKEN = process.env.TELEGRAM_BOT_KEY;
+const bot = new TelegramBot(TB_TOKEN, {
+  polling: {
+    interval: 300,
+    autoStart: true,
+  },
+});
 
-async function main() {
+bot.on("message", async (msg, metadata) => {
+  const chatId = msg.chat.id;
+  const message = msg.text;
+
+  if (message === "/start") {
+    bot.sendMessage(chatId, "Будь-ласка, введіть ваш запит до асистента: ↓↓↓");
+  } else {
+    main(chatId, message);
+  }
+});
+
+async function main(tgChatId, message) {
   let runStatus;
 
   try {
@@ -46,37 +65,35 @@ async function main() {
     console.log(`✔️ Id треду: ${chalk.grey.bold(threadId)}`);
 
     // Логіка надсилання повідомлень і отримування відповідей
+    // while (true) {
+    // const message = await askUserMessage();
+    // const message = "що у нас на середу?";
+
+    // 5. Додавання повідомлення в тред
+    await addMessageToThread(openai, threadId, message);
+
+    //// Якщо ви хочете додати файл до повідомлення, використовуйте цей код
+    // await addMessageToThread(openai, threadId, message, fileId);
+
+    // 6. Запуск асистента
+    const runObject = await runAssistantOnThread(openai, threadId, assistantId);
+
+    // 7. Очікування відповіді
     while (true) {
-      const message = await askUserMessage();
-
-      // 5. Додавання повідомлення в тред
-      await addMessageToThread(openai, threadId, message);
-
-      //// Якщо ви хочете додати файл до повідомлення, використовуйте цей код
-      // await addMessageToThread(openai, threadId, message, fileId);
-
-      // 6. Запуск асистента
-      const runObject = await runAssistantOnThread(
-        openai,
-        threadId,
-        assistantId
-      );
-
-      // 7. Очікування відповіді
-      while (true) {
-        // перевіряємо статус запуску кожні 2 секунди
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        runStatus = await getRunStatus(openai, threadId, runObject.id);
-        if (runStatus.status === "completed" || runStatus.status === "failed") {
-          break;
-        }
+      // перевіряємо статус запуску кожні 2 секунди
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      runStatus = await getRunStatus(openai, threadId, runObject.id);
+      if (runStatus.status === "completed" || runStatus.status === "failed") {
+        break;
       }
-
-      // 8. Отримання відповіді
-      const lastMessage = await getLastResponse(openai, threadId);
-      console.log(`\n💬 Відповідь асистента: \n ${chalk.cyan.bold(lastMessage)}
-      `);
     }
+
+    // 8. Отримання відповіді
+    const lastMessage = await getLastResponse(openai, threadId);
+    console.log(`\n💬 Відповідь асистента: \n ${chalk.cyan.bold(lastMessage)}
+    `);
+    bot.sendMessage(tgChatId, `\n💬 Відповідь асистента: ${lastMessage}`);
+    // }
   } catch (error) {
     console.error(chalk.red("Помилка: "), error);
   }
@@ -99,4 +116,4 @@ async function askUserMessage() {
   });
 }
 
-main();
+// main();

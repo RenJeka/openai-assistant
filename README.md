@@ -30,15 +30,20 @@ npm i
 
 1. Put you file into `files` folder
 2. Fill `assistant_instructions.md` file with instruction for the assistant.
-3. Make a copy of file `.env.examle` rename it to `.env` and fill it with correct data (tokens, vector store name, file name ... etc.); File name should be WITH EXTENSION! (examp: `my_schedule.docx`).
+3. [Get the OpenAI API key.](https://platform.openai.com/docs/quickstart#create-and-export-an-api-key)
+4. Make a copy of file `.env.examle` rename it to `.env` and fill it with correct data (tokens, vector store name, file name ... etc.); File name should be WITH EXTENSION! (examp: `my_schedule.docx`).
 
 # Usage
 
-### Run the project
+#### Run the project
 
 ```
 npm start
 ```
+
+#### Use the project
+
+1. Follow the instructions in application console.
 
 # Contributing
 
